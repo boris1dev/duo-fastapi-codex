@@ -1,32 +1,32 @@
-"""Tenant resolution middleware."""
-
-from __future__ import annotations
-
-from typing import Callable
-
-from fastapi import Request
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.requests import Request
 from starlette.types import ASGIApp
 
-from .context import TenantContext, tenant_context_var
+from app.config import settings
+
+from .context import set_tenant
 
 
-class TenantContextMiddleware(BaseHTTPMiddleware):
-    """Populate the tenant context for each request."""
-
-    def __init__(self, app: ASGIApp, header: str = "X-Tenant-Id", default_tenant: str = "public") -> None:
+class TenancyMiddleware(BaseHTTPMiddleware):
+    def __init__(self, app: ASGIApp):
         super().__init__(app)
-        self.header = header
-        self.default_tenant = default_tenant
 
-    async def dispatch(self, request: Request, call_next: Callable):  # type: ignore[override]
-        tenant_id = request.headers.get(self.header, self.default_tenant)
-        token = tenant_context_var.set(TenantContext(tenant_id=tenant_id))
-        try:
-            response = await call_next(request)
-        finally:
-            tenant_context_var.reset(token)
+    async def dispatch(self, request: Request, call_next):
+        tenant = settings.TENANCY_DEFAULT
+        # Header priorisieren
+        if hdr := request.headers.get(settings.TENANCY_HEADER):
+            tenant = hdr
+        else:
+            # Subdomain (optional): tenant.example.com → tenant
+            host = request.headers.get("host", "")
+            if "." in host:
+                sub = host.split(":")[0].split(".")[0]
+                if sub and sub not in ("www", "localhost"):
+                    tenant = sub
+        set_tenant(tenant)
+        response = await call_next(request)
+        response.headers["X-Tenant"] = tenant
         return response
 
 
-__all__ = ["TenantContextMiddleware"]
+__all__ = ["TenancyMiddleware"]

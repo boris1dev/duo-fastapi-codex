@@ -1,19 +1,17 @@
-"""Context var to hold current tenant information."""
-
-from __future__ import annotations
-
 from contextvars import ContextVar
-from dataclasses import dataclass
+
+from app.config import settings
 
 
-@dataclass(slots=True)
-class TenantContext:
-    """Represents the active tenant in the request scope."""
-
-    tenant_id: str
+_tenant: ContextVar[str] = ContextVar("tenant", default=settings.TENANCY_DEFAULT)
 
 
-tenant_context_var: ContextVar[TenantContext | None] = ContextVar("tenant_context", default=None)
+def set_tenant(tenant: str):
+    _tenant.set(tenant)
 
 
-__all__ = ["TenantContext", "tenant_context_var"]
+def get_tenant() -> str:
+    return _tenant.get()
+
+
+__all__ = ["set_tenant", "get_tenant"]

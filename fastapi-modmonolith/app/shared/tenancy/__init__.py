@@ -1,6 +1,6 @@
 """Tenancy utilities for the modular monolith."""
 
-from .context import TenantContext, tenant_context_var
-from .middleware import TenantContextMiddleware
+from .context import get_tenant, set_tenant
+from .middleware import TenancyMiddleware
 
-__all__ = ["TenantContext", "tenant_context_var", "TenantContextMiddleware"]
+__all__ = ["get_tenant", "set_tenant", "TenancyMiddleware"]

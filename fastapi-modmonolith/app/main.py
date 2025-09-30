@@ -11,7 +11,7 @@ from fastapi.responses import ORJSONResponse
 from .config import Settings, get_settings
 from .logging import configure_logging, get_logger
 from .shared.messagebus import MessageBus
-from .shared.tenancy.middleware import TenantContextMiddleware
+from .shared.tenancy.middleware import TenancyMiddleware
 
 
 @asynccontextmanager
@@ -39,7 +39,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
         lifespan=lifespan,
     )
 
-    app.add_middleware(TenantContextMiddleware, header=settings.tenancy_header, default_tenant=settings.tenancy_default)
+    app.add_middleware(TenancyMiddleware)
 
     @app.get("/health", tags=["system"])
     async def health_check() -> dict[str, str]:
